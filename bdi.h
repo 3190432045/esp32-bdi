@@ -40,11 +40,38 @@ typedef struct
 ESP 32 start advertising
 */
 
-void bdi_port_init(bdi_port_t state_init);
-void _bdi_begin_advertising();
+/*
+=================
+bdi_port_init
+
+Not implemented
+=================
+*/
+
+/* void bdi_port_init(bdi_port_t state_init); */
+void bdi_port_init_default(void);
+void bdi_begin_advertising(void);
 void bdi_write_bytes(const byte *data, int len);
-void _bdi_read_bytes(byte *data, int len);
-int bdi_shutdown();
+
+/*
+=================
+bdi_read_bytes
+
+Not implemented
+=================
+*/
+
+/* void bdi_read_bytes(byte *data, int len); */
+
+/*
+=================
+bdi_shutdown
+
+Not implemented
+=================
+*/
+
+/* int bdi_shutdown(); */
 
 #ifdef __cplusplus
 }
