@@ -28,11 +28,23 @@ extern "C"
 
 #include <stdint.h>
 
-void bdi_port_init();
-void bdi_begin_advertising();
-void bdi_write_bytes();
-void bdi_read_bytes();
-void bdi_destroy();
+typedef unsigned char byte;
+
+typedef struct
+{
+    int baud_rate;
+
+} bdi_port_t;
+
+/*
+ESP 32 start advertising
+*/
+
+void bdi_port_init(bdi_port_t state_init);
+void _bdi_begin_advertising();
+void bdi_write_bytes(const byte *data, int len);
+void _bdi_read_bytes(byte *data, int len);
+int bdi_shutdown();
 
 #ifdef __cplusplus
 }
