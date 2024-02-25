@@ -5,7 +5,7 @@
 
 /*
 =================
-last modified: 2024/2/24
+last modified: 2024/2/25
 =================
 */
 
@@ -32,11 +32,13 @@ last modified: 2024/2/24
 #include "esp_bt_main.h"
 
 #include "bdi.h"
+#include "mockdata_t.h"
 
 
 void app_main(void)
 {
     esp_err_t ret;
+    mockdata_t data = {'a','b','c', 127};
 
     ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -49,7 +51,7 @@ void app_main(void)
     bdi_begin_advertising();
     for(;;)
     {
-        bdi_write_byte('a');
+        bdi_send_packet(&data);
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
     return;

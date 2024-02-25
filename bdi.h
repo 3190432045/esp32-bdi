@@ -13,7 +13,7 @@
 
 /*
 =================
-last modified: 2024/2/23
+last modified: 2024/2/25
 =================
 */
 
@@ -27,32 +27,26 @@ extern "C"
 #endif
 
 #include <stdint.h>
+#include "mockdata_t.h"
 
 typedef unsigned char byte;
 
 typedef struct
 {
     int baud_rate;
-
 } bdi_port_t;
 
 /*
 ESP 32 start advertising
 */
 
-/*
-=================
-bdi_port_init
-
-Not implemented
-=================
-*/
-
-/* void bdi_port_init(bdi_port_t state_init); */
+/* The order to call these functions:  1.bdi_port_init 2.bdi_begin_advertising 3.bdi_send_packet*/
+void bdi_port_init(bdi_port_t state_init);
 void bdi_port_init_default(void);
 void bdi_begin_advertising(void);
 /*void bdi_write_bytes(const byte *data, int len);*/
-void bdi_write_byte(byte data);
+/*void bdi_write_byte(byte data);*/
+void bdi_send_packet(mockdata_t *data);
 
 /*
 =================

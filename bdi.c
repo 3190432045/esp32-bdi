@@ -5,7 +5,7 @@
 
 /*
 =================
-last modified: 2024/2/23
+last modified: 2024/2/25
 =================
 */
 
@@ -18,7 +18,7 @@ For bdi functions goto end of the file
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "mockdata_t.h"
 #include "bdi.h"
 
 
@@ -520,14 +520,14 @@ void spp_heartbeat_task(void * arg)
 void spp_cmd_task(void * arg)
 {
  /*   uint8_t * cmd_id; */
-    byte data = 0;
+    mockdata_t *data;
 
     for(;;){
         vTaskDelay(50 / portTICK_PERIOD_MS);
-        if(xQueueReceive(cmd_cmd_queue, &data, portMAX_DELAY)){
+        if(xQueueReceive(cmd_cmd_queue, data, portMAX_DELAY)){
                 if(is_connected){
                     if(1 <= (spp_mtu_size - 3)){
-                        esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL],(uint16_t)1, (uint8_t *)&data, false);
+                        esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL],(uint16_t)sizeof(mockdata_t), (uint8_t *)data, false);
                     }
             }
         }
@@ -554,7 +554,7 @@ static void spp_task_init(void)
     xTaskCreate(spp_heartbeat_task, "spp_heartbeat_task", 2048, NULL, 10, NULL);
 #endif
 
-    cmd_cmd_queue = xQueueCreate(10, sizeof(uint8_t));
+    cmd_cmd_queue = xQueueCreate(10, sizeof(mockdata_t));
     xTaskCreate(spp_cmd_task, "spp_cmd_task", 2048, NULL, 10, NULL);
 }
 
@@ -766,12 +766,43 @@ This should be called once only
 void bdi_port_init(bdi_port_t state_init)
 {
     state = state_init;
+
+        /*  control cfg  */
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+    ret = esp_bt_controller_init(&bt_cfg);
+    if (ret) {
+        ESP_LOGE(GATTS_TABLE_TAG, "%s enable controller failed: %s", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    if (ret) {
+        ESP_LOGE(GATTS_TABLE_TAG, "%s enable controller failed: %s", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    ESP_LOGI(GATTS_TABLE_TAG, "%s init bluetooth", __func__);
+    esp_bluedroid_config_t bluedroid_cfg = BT_BLUEDROID_INIT_CONFIG_DEFAULT();
+    ret = esp_bluedroid_init_with_cfg(&bluedroid_cfg);
+    if (ret) {
+        ESP_LOGE(GATTS_TABLE_TAG, "%s init bluetooth failed: %s", __func__, esp_err_to_name(ret));
+        return;
+    }
+    ret = esp_bluedroid_enable();
+    if (ret) {
+        ESP_LOGE(GATTS_TABLE_TAG, "%s enable bluetooth failed: %s", __func__, esp_err_to_name(ret));
+        return;
+    }
+
     printf("msg_bdi_port_init");
 }
 
 void bdi_port_init_default(void)
 {
     esp_err_t ret;
+
+    state.baud_rate = 100;
 
     /*  control cfg  */
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -825,15 +856,19 @@ bdi_write_bytes
 /*
 void bdi_write_bytes(const byte *data, int len)
 {
-    xQueueSend(cmd_cmd_queue, &data, 100 / portTICK_PERIOD_MS);
-    printf("msgbdi_write_bytes: %s", data);
+    xQueueSend(cmd_cmd_queue, data, 100 / portTICK_PERIOD_MS);
 }
 */
+/*
 void bdi_write_byte(byte data)
 {
-
     xQueueSend(cmd_cmd_queue, &data, 100 / portTICK_PERIOD_MS);
+}
+*/
 
+void bdi_send_packet(mockdata_t *data)
+{
+    xQueueSend(cmd_cmd_queue, data, state.baud_rate / portTICK_PERIOD_MS);
 }
 
 /*
@@ -843,12 +878,12 @@ bdi_read_bytes
 Not implemented
 =================
 */
-
+/*
 void bdi_read_bytes(byte *data, int len)
 {
 
 }
-
+*/
 /*
 =================
 bdi_shutdown
@@ -856,13 +891,13 @@ bdi_shutdown
 Not implemented
 =================
 */
-
+/*
 int bdi_shutdown()
 {
     printf("msg_bdi_shutdown");
     return 0;
 }
-
+*/
 /*
 
 ===== bdi functions ========================================================
