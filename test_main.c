@@ -47,5 +47,10 @@ void app_main(void)
 
     bdi_port_init_default();
     bdi_begin_advertising();
+    for(;;)
+    {
+        bdi_write_byte('a');
+        Delay(1000);
+    }
     return;
 }

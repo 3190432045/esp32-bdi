@@ -52,6 +52,7 @@ Not implemented
 void bdi_port_init_default(void);
 void bdi_begin_advertising(void);
 void bdi_write_bytes(const byte *data, int len);
+void bdi_write_byte(byte data);
 
 /*
 =================
