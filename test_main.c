@@ -50,7 +50,7 @@ void app_main(void)
     for(;;)
     {
         bdi_write_byte('a');
-        Delay(1000);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
     return;
 }

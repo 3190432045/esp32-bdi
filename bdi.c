@@ -516,7 +516,35 @@ void spp_heartbeat_task(void * arg)
     vTaskDelete(NULL);
 }
 #endif
+
+void spp_cmd_task(void * arg)
+{
+ /*   uint8_t * cmd_id; */
+    byte data = 0;
+
+    for(;;){
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+        if(xQueueReceive(cmd_cmd_queue, &data, portMAX_DELAY)){
+                if(is_connected){
+                    if(event.size <= (spp_mtu_size - 3)){
+                        esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL],(uint16_t)1, (uint8_t *)&data, false);
+                    }
+            }
+        }
+    }
+
 /*
+    for(;;){
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+        if(xQueueReceive(cmd_cmd_queue, &cmd_id, portMAX_DELAY)) {
+            esp_log_buffer_char(GATTS_TABLE_TAG,(char *)(cmd_id),strlen((char *)cmd_id));
+            free(cmd_id);
+        }
+    }
+*/
+    vTaskDelete(NULL);
+}
+
 static void spp_task_init(void)
 {
     spp_uart_init();
@@ -526,10 +554,10 @@ static void spp_task_init(void)
     xTaskCreate(spp_heartbeat_task, "spp_heartbeat_task", 2048, NULL, 10, NULL);
 #endif
 
-    cmd_cmd_queue = xQueueCreate(10, sizeof(uint32_t));
+    cmd_cmd_queue = xQueueCreate(10, sizeof(uint8_t));
     xTaskCreate(spp_cmd_task, "spp_cmd_task", 2048, NULL, 10, NULL);
 }
-*/
+
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
     esp_err_t err;
@@ -782,7 +810,7 @@ void bdi_begin_advertising(void)
     esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_app_register(ESP_SPP_APP_ID);
 
-/*    spp_task_init();  */
+    spp_task_init();
 
     printf("msg_bdi_begin_advertising");
 }
@@ -794,21 +822,17 @@ bdi_write_bytes
 100 / portTICK_PERIOD_MS
 =================
 */
-
+/*
 void bdi_write_bytes(const byte *data, int len)
 {
-    if(event.size <= (spp_mtu_size - 3)){
-        esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], (uint16_t)len, (uint8_t *)data, false);
-    }
+    xQueueSend(cmd_cmd_queue, &data, 100 / portTICK_PERIOD_MS);
     printf("msgbdi_write_bytes: %s", data);
 }
-
+*/
 void bdi_write_byte(byte data)
 {
-    if(event.size <= (spp_mtu_size - 3)){
-        esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL],1, (uint8_t *)data, false);
-//        xQueueSend(cmd_cmd_queue, &data, 100 / portTICK_PERIOD_MS);
-    }
+
+    xQueueSend(cmd_cmd_queue, &data, 100 / portTICK_PERIOD_MS);
 
 }
 
