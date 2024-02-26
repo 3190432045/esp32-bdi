@@ -526,7 +526,7 @@ void spp_cmd_task(void * arg)
         vTaskDelay(50 / portTICK_PERIOD_MS);
         if(xQueueReceive(cmd_cmd_queue, data, portMAX_DELAY)){
                 if(is_connected){
-                    if(1 <= (spp_mtu_size - 3)){
+                    if(sizeof(mockdata_t) <= (spp_mtu_size - 3)){
                         esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL],(uint16_t)sizeof(mockdata_t), (uint8_t *)data, false);
                     }
             }
