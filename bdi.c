@@ -520,14 +520,16 @@ void spp_heartbeat_task(void * arg)
 void spp_cmd_task(void * arg)
 {
  /*   uint8_t * cmd_id; */
-    mockdata_t *data;
+    mockdata_t data;
+
+    memset(&data, 0, sizeof(mockdata_t));
 
     for(;;){
         vTaskDelay(50 / portTICK_PERIOD_MS);
-        if(xQueueReceive(cmd_cmd_queue, data, portMAX_DELAY)){
+        if(xQueueReceive(cmd_cmd_queue, &data, portMAX_DELAY)){
                 if(is_connected){
                     if(sizeof(mockdata_t) <= (spp_mtu_size - 3)){
-                        esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL],(uint16_t)sizeof(mockdata_t), (uint8_t *)data, false);
+                        esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL],(uint16_t)sizeof(mockdata_t), (uint8_t *)&data, false);
                     }
             }
         }
@@ -765,6 +767,8 @@ This should be called once only
 
 void bdi_port_init(bdi_port_t state_init)
 {
+    esp_err_t ret;
+
     state = state_init;
 
         /*  control cfg  */

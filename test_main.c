@@ -52,7 +52,7 @@ void app_main(void)
     for(;;)
     {
         bdi_send_packet(&data);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
     return;
 }
