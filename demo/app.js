@@ -1,11 +1,11 @@
 var bluetoothDevice;
 
 function onButtonClick() {
+  serviceUuid = parseInt('0xABF0');
+  characteristicUuid = parseInt('0xABF2');
   bluetoothDevice = null;
   log('Requesting any Bluetooth Device...');
-  navigator.bluetooth.requestDevice({
-     // filters: [...] <- Prefer filters to save energy & show relevant devices.
-     acceptAllDevices: true})
+  navigator.bluetooth.requestDevice({filters: [{services: [serviceUuid]}]})
   .then(device => {
     time('Choosing device...');
     log('> Name:             ' + device.name);
@@ -21,13 +21,16 @@ function onButtonClick() {
 }
 
 function connect() {
-  exponentialBackoff(3 /* max retries */, 2 /* seconds delay */,
+  exponentialBackoff(32767 /* max retries */, 2 /* seconds delay */,
     function toTry() {
       time('Connecting to Bluetooth Device... ');
       return bluetoothDevice.gatt.connect();
     },
-    function success() {
+    function success(result) {
       time('> Bluetooth Device connected');
+      log('result = ' + result);
+      DisplayDeviceInfo(bluetoothDevice);
+      GetCharacteristicNotification(result);
     },
     function fail() {
       time('Failed to reconnect.');
@@ -70,49 +73,6 @@ function DisplayDeviceInfo(device) {
     log('> Connected:        ' + device.gatt.connected);
 }
 
-// DiscoverServices
-//
-//
-function DiscoverServices() {
-  // Validate services UUID entered by user first.
-  let optionalServices = document.querySelector('#optionalServices').value
-    .split(/, ?/).map(s => s.startsWith('0x') ? parseInt(s) : s)
-    .filter(s => s && BluetoothUUID.getService);
-
-  log('Requesting any Bluetooth Device...');
-  navigator.bluetooth.requestDevice({
-   // filters: [...] <- Prefer filters to save energy & show relevant devices.
-      acceptAllDevices: true,
-      optionalServices: optionalServices})
-  .then(device => {
-    log('Connecting to GATT Server...');
-    return device.gatt.connect();
-  })
-  .then(server => {
-    // Note that we could also get all services that match a specific UUID by
-    // passing it to getPrimaryServices().
-    log('Getting Services...');
-    return server.getPrimaryServices();
-  })
-  .then(services => {
-    log('Getting Characteristics...');
-    let queue = Promise.resolve();
-    services.forEach(service => {
-      queue = queue.then(_ => service.getCharacteristics().then(characteristics => {
-        log('> Service: ' + service.uuid);
-        characteristics.forEach(characteristic => {
-          log('>> Characteristic: ' + characteristic.uuid + ' ' +
-              getSupportedProperties(characteristic));
-        });
-      }));
-    });
-    return queue;
-  })
-  .catch(error => {
-    log('Argh! ' + error);
-  });
-}
-
 /* Utils */
 
 function getSupportedProperties(characteristic) {
@@ -123,4 +83,55 @@ function getSupportedProperties(characteristic) {
     }
   }
   return '[' + supportedProperties.join(', ') + ']';
+}
+
+// GetCharacteristicNotification
+//
+//
+function GetCharacteristicNotification(server) {
+    serviceUuid = parseInt('0xABF0');
+    characteristicUuid = parseInt('0xABF2');
+    log('Getting Service...');
+    server.getPrimaryService(serviceUuid)
+  .then(service => {
+    log('Getting Characteristic...');
+    return service.getCharacteristic(characteristicUuid);
+  })
+  .then(characteristic => {
+    myCharacteristic = characteristic;
+    return myCharacteristic.startNotifications().then(_ => {
+      log('> Notifications started');
+      myCharacteristic.addEventListener('characteristicvaluechanged',
+          handleNotifications);
+    });
+  })
+  .catch(error => {
+    log('Argh! ' + error);
+  });
+}
+/*
+function onStopButtonClick() {
+  if (myCharacteristic) {
+    myCharacteristic.stopNotifications()
+    .then(_ => {
+      log('> Notifications stopped');
+      myCharacteristic.removeEventListener('characteristicvaluechanged',
+          handleNotifications);
+    })
+    .catch(error => {
+      log('Argh! ' + error);
+    });
+  }
+}
+*/
+function handleNotifications(event) {
+  let value = event.target.value;
+  let a = [];
+  // Convert raw data bytes to hex values just for the sake of showing something.
+  // In the "real" world, you'd use data.getUint8, data.getUint16 or even
+  // TextDecoder to process raw data bytes.
+  for (let i = 0; i < value.byteLength; i++) {
+    a.push('0x' + ('00' + value.getUint8(i).toString(16)).slice(-2));
+  }
+  log('> ' + a.join(' '));
 }
